@@ -21,6 +21,7 @@ import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSeriali
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 trait Models {
   final case class WikipediaEntry(title: String, content: String, related: List[String])
@@ -43,18 +44,13 @@ object ETLSample extends AkkaApp with Models {
 
     Flow[WikipediaEntry]
       .mapAsyncUnordered(parallelism) { w =>
-        val request = HttpRequest(uri = Uri("http://images.example.com/query").withQuery(Query(Map("query" -> w.title))))
+        val uri = Uri("http://images.example.com/query").withQuery(Query(Map("query" -> w.title)))
+        val request = HttpRequest(uri = uri)
 
         Http().singleRequest(request)
-          .map { response =>
-            if (response.status.isFailure()) throw new Exception(s"Failed to fetch image for ${w.title}! Response: " + response)
-            else response
-          }
           .flatMap { response =>
-            val downloadedImage = response.entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
-            downloadedImage map {
-              RichWikipediaEntry(w, _)
-            }
+            response.entity.toStrict(1.second)
+              .map(strict =>  RichWikipediaEntry(w, strict.data))
           }
       }
   }
@@ -87,7 +83,7 @@ object ETLSample extends AkkaApp with Models {
   
   completed.onComplete {
     case Success(ioResult) => 
-      println(s"Streamed ${} bytes of wikipedia data!")
+      println(s"Streamed ${ioResult.count} bytes of wikipedia data!")
       system.terminate()
       
     case Failure(ex) => 
