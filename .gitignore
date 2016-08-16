@@ -4,6 +4,7 @@
 *.log
 
 .idea
+src/main/resources/application.conf
 
 # sbt specific
 .cache
