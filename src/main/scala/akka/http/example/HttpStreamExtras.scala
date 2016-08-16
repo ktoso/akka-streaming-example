@@ -18,21 +18,6 @@ trait HttpStreamExtras {
     extends RuntimeException(s"HttpResponse failed with [${r.status}]")
 
   implicit class HttpSource[M](val s: Source[HttpResponse, M]) {
-    
-    def handleHttpStatusCode: Source[HttpResponse, M] =
-      s.via(new SimpleLinearGraphStage[HttpResponse] {
-        override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-          setHandlers(in, out, this)
-
-          override def onPush(): Unit = {
-            val el = grab(in)
-            if (el.status.isSuccess) push(out, el)
-            else failStage(HttpRequestFailedException(el))
-          }
-
-          override def onPull(): Unit = pull(in)
-        }
-      })
 
     def extractDataBytes: Source[ByteString, M] =
       s.flatMapConcat(_.entity.dataBytes)

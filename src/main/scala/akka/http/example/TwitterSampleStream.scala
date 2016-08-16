@@ -50,10 +50,11 @@ object TwitterSampleStream extends AkkaApp
       .addHeader(Accept(MediaRanges.`*/*`))
 
   val requestSource =
-    Source.single(())
-      .map(_ => Http().singleRequest(request))
-      .mapAsync(1)(identity)
-      .handleHttpStatusCode
+    Source.single(()).mapAsync(1)(_ => Http().singleRequest(request))
+      .map { el =>
+        if (el.status.isSuccess) el
+        else throw HttpRequestFailedException(el)
+      }
 
   def fileSink(file: Path): Sink[ByteString, Future[IOResult]] =
     FileIO.toPath(file, Set(APPEND, CREATE))
