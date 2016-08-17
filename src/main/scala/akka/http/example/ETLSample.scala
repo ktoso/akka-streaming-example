@@ -8,7 +8,6 @@ import java.nio.file.Paths
 
 import akka.NotUsed
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.kafka.ProducerSettings
@@ -20,15 +19,13 @@ import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
-trait Models {
-  final case class WikipediaEntry(title: String, content: String, related: List[String])
-  final case class RichWikipediaEntry(wikipediaEntry: WikipediaEntry, image: ByteString)
-}
+final case class WikipediaEntry(title: String, content: String, related: List[String])
+final case class RichWikipediaEntry(wikipediaEntry: WikipediaEntry, image: ByteString)
 
-object ETLSample extends AkkaApp with Models {
+object ETLSample extends AkkaApp {
 
   // kafka producer settings
   lazy val producerSettings = ProducerSettings(system, new ByteArraySerializer, new StringSerializer)
